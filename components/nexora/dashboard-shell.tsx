@@ -1,10 +1,10 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Activity, ArrowDownUp, Bell, BriefcaseBusiness, ChartNoAxesCombined, ChevronDown, CircleHelp, Command, CreditCard, FileChartColumn, FileText, LayoutDashboard, LifeBuoy, Menu, Package, PanelLeftClose, PanelLeftOpen, Plus, Search, Settings, Users, X } from 'lucide-react'
-import { Avatar, IconMark } from '@/components/nexora/primitives'
+import { Activity, ArrowDownUp, ArrowUpRight, Bell, BriefcaseBusiness, ChartNoAxesCombined, ChevronDown, CircleHelp, Command, CreditCard, FileChartColumn, FileText, LayoutDashboard, LifeBuoy, Menu, Package, PanelLeftClose, PanelLeftOpen, Plus, Search, Settings, Users, X } from 'lucide-react'
+import { Avatar, IconMark, Modal } from '@/components/nexora/primitives'
 import { DemoProvider, useDemoData } from '@/components/nexora/demo-context'
 
 const navigation = [
@@ -23,7 +23,20 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
   const { customers, subscriptions, transactions, invoices, products } = useDemoData()
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [workspaceOpen, setWorkspaceOpen] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
   const [search, setSearch] = useState('')
+  const searchInputRef = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    const handleShortcut = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault()
+        searchInputRef.current?.focus()
+      }
+    }
+    window.addEventListener('keydown', handleShortcut)
+    return () => window.removeEventListener('keydown', handleShortcut)
+  }, [])
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [unread, setUnread] = useState(true)
   const [profileOpen, setProfileOpen] = useState(false)
@@ -44,7 +57,7 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
     {mobileOpen && <button className="mobile-scrim" aria-label="Close navigation" onClick={() => setMobileOpen(false)} />}
     <aside className={`sidebar${collapsed ? ' sidebar-collapsed' : ''}${mobileOpen ? ' sidebar-mobile-open' : ''}`}>
       <div className="sidebar-brand"><Link href="/dashboard" className="brand-lockup" aria-label="Nexora home"><IconMark /><span className="brand-name">nexora<span>.</span></span></Link><button className="collapse-button" aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} onClick={() => setCollapsed(!collapsed)}>{collapsed ? <PanelLeftOpen size={17} /> : <PanelLeftClose size={17} />}</button></div>
-      {!collapsed && <button className="workspace-select"><span className="workspace-icon">A</span><span className="workspace-copy"><strong>Acme Technologies</strong><small>Free workspace</small></span><ChevronDown size={15} /></button>}
+      {!collapsed && <><button className="workspace-select" aria-expanded={workspaceOpen} onClick={() => setWorkspaceOpen(!workspaceOpen)}><span className="workspace-icon">A</span><span className="workspace-copy"><strong>Acme Technologies</strong><small>Free workspace</small></span><ChevronDown size={15} /></button>{workspaceOpen && <div className="workspace-switch-popover"><strong>Acme Technologies</strong><span>Active demo workspace</span><Link href="/dashboard/settings" onClick={() => setWorkspaceOpen(false)}>Workspace settings</Link></div>}</>}
       <nav className="side-navigation" aria-label="Main navigation">
         {navigation.map((group) => <div className="nav-group" key={group.label}><span className="nav-group-label">{group.label}</span>{group.links.map(({ label, href, icon: Icon }) => <Link key={href} href={href} title={collapsed ? label : undefined} className={`nav-link${pathname === href ? ' nav-link-active' : ''}`} onClick={() => setMobileOpen(false)}><Icon size={17} strokeWidth={1.8} /><span>{label}</span>{pathname === href && !collapsed && <span className="nav-active-indicator" />}</Link>)}</div>)}
       </nav>
@@ -52,9 +65,10 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
       <div className="sidebar-footer"><div className="user-mini"><Avatar name="Alex Morgan" /><div className="user-copy"><strong>Alex Morgan</strong><span>Workspace admin</span></div><button className="more-button" aria-label="Open profile menu" onClick={() => setProfileOpen(!profileOpen)}><ChevronDown size={15} /></button></div>{profileOpen && <div className="profile-popover"><strong>Alex Morgan</strong><span>alex@acmetech.example</span><Link href="/dashboard/settings" onClick={() => setProfileOpen(false)}>Account settings</Link><Link href="/login">Sign out</Link></div>}</div>
     </aside>
     <div className="main-column">
-      <header className="topbar"><button className="mobile-menu-button icon-button" aria-label="Open navigation" onClick={() => setMobileOpen(true)}><Menu size={19} /></button><div className="breadcrumb"><span>Workspace</span><span className="breadcrumb-slash">/</span><strong>{title}</strong></div><div className="topbar-actions"><div className="global-search"><Search size={16} /><input aria-label="Search Nexora" placeholder="Search anything..." value={search} onChange={(event) => setSearch(event.target.value)} onKeyDown={(event) => { if (event.key === 'Escape') setSearch('') }} /><kbd><Command size={11} /> K</kbd>{search && <button className="search-clear" aria-label="Clear search" onClick={() => setSearch('')}><X size={14} /></button>}{search && <div className="search-results">{results.length ? results.map((result, index) => <button key={`${result.label}-${index}`} onClick={() => { router.push(result.href); setSearch('') }}><span className="search-result-icon"><Search size={14} /></span><span><strong>{result.label}</strong><small>{result.meta}</small></span><span className="search-result-arrow">↗</span></button>) : <p>No matching records</p>}</div>}</div><button className="icon-button help-button" aria-label="Help center" title="Help center"><LifeBuoy size={18} /></button><div className="notification-wrap"><button className="icon-button notification-button" aria-label="Notifications" onClick={() => setNotificationsOpen(!notificationsOpen)}><Bell size={18} />{unread && <span className="notification-dot" />}</button>{notificationsOpen && <div className="notification-popover"><div className="popover-heading"><div><strong>Notifications</strong><small>{unread ? '2 unread updates' : 'You’re all caught up'}</small></div><button onClick={() => setUnread(false)}>Mark all read</button></div><div className="notification-item"><span className="notification-symbol violet"><Users size={14} /></span><div><strong>New customer</strong><p>Olivia Chen joined your workspace</p><small>8 min ago</small></div>{unread && <i />}</div><div className="notification-item"><span className="notification-symbol green"><CreditCard size={14} /></span><div><strong>Payment completed</strong><p>$396.00 received from Northstar Labs</p><small>42 min ago</small></div>{unread && <i />}</div><div className="notification-item"><span className="notification-symbol amber"><FileText size={14} /></span><div><strong>Invoice overdue</strong><p>INV-2026-0286 is past its due date</p><small>3 hours ago</small></div></div></div>}</div><button className="topbar-avatar" aria-label="Open account menu" onClick={() => setProfileOpen(!profileOpen)}><Avatar name="Alex Morgan" size="sm" /></button></div></header>
+      <header className="topbar"><button className="mobile-menu-button icon-button" aria-label="Open navigation" onClick={() => setMobileOpen(true)}><Menu size={19} /></button><div className="breadcrumb"><span>Workspace</span><span className="breadcrumb-slash">/</span><strong>{title}</strong></div><div className="topbar-actions"><div className="global-search"><Search size={16} /><input ref={searchInputRef} aria-label="Search Nexora" placeholder="Search anything..." value={search} onChange={(event) => setSearch(event.target.value)} onKeyDown={(event) => { if (event.key === 'Escape') setSearch('') }} /><kbd><Command size={11} /> K</kbd>{search && <button className="search-clear" aria-label="Clear search" onClick={() => setSearch('')}><X size={14} /></button>}{search && <div className="search-results">{results.length ? results.map((result, index) => <button key={`${result.label}-${index}`} onClick={() => { router.push(result.href); setSearch('') }}><span className="search-result-icon"><Search size={14} /></span><span><strong>{result.label}</strong><small>{result.meta}</small></span><span className="search-result-arrow">↗</span></button>) : <p>No matching records</p>}</div>}</div><button className="icon-button help-button" aria-label="Help center" title="Help center" onClick={() => setHelpOpen(true)}><LifeBuoy size={18} /></button><div className="notification-wrap"><button className="icon-button notification-button" aria-label="Notifications" onClick={() => setNotificationsOpen(!notificationsOpen)}><Bell size={18} />{unread && <span className="notification-dot" />}</button>{notificationsOpen && <div className="notification-popover"><div className="popover-heading"><div><strong>Notifications</strong><small>{unread ? '2 unread updates' : 'You’re all caught up'}</small></div><button onClick={() => setUnread(false)}>Mark all read</button></div><div className="notification-item"><span className="notification-symbol violet"><Users size={14} /></span><div><strong>New customer</strong><p>Olivia Chen joined your workspace</p><small>8 min ago</small></div>{unread && <i />}</div><div className="notification-item"><span className="notification-symbol green"><CreditCard size={14} /></span><div><strong>Payment completed</strong><p>$396.00 received from Northstar Labs</p><small>42 min ago</small></div>{unread && <i />}</div><div className="notification-item"><span className="notification-symbol amber"><FileText size={14} /></span><div><strong>Invoice overdue</strong><p>INV-2026-0286 is past its due date</p><small>3 hours ago</small></div></div></div>}</div><button className="topbar-avatar" aria-label="Open account menu" onClick={() => setProfileOpen(!profileOpen)}><Avatar name="Alex Morgan" size="sm" /></button></div></header>
       <main className="page-content">{children}</main>
     </div>
+    {helpOpen && <Modal title="Nexora help center" description="A quick guide to your demo workspace." onClose={() => setHelpOpen(false)}><div className="help-content"><p>Explore the sidebar to open analytics, customers, subscriptions, transactions, invoices, and product management.</p><p>All records in this portfolio workspace are illustrative demo data. Changes are saved locally in this browser.</p><Link className="button button-secondary" href="/dashboard/reports" onClick={() => setHelpOpen(false)}>Browse reports <ArrowUpRight size={14} /></Link></div></Modal>}
   </div>
 }
 
